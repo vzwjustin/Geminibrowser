@@ -1,5 +1,5 @@
 /**
- * Content Script
+ * Gemini Browser Control - Content Script
  * Handles DOM interaction and browser control actions
  */
 
@@ -13,21 +13,15 @@ async function handleMessage(request) {
   switch (request.type) {
     case 'GET_CONTEXT':
       return getPageContext();
-
     case 'EXECUTE_ACTION':
       return executeAction(request.action);
-
     case 'SHOW_NOTIFICATION':
       return showNotification(request.message);
-
     default:
       return { success: false, error: 'Unknown message type' };
   }
 }
 
-/**
- * Get page context including interactive elements
- */
 function getPageContext() {
   const elements = getInteractiveElements();
   const mainContent = getMainContent();
@@ -40,9 +34,6 @@ function getPageContext() {
   };
 }
 
-/**
- * Get interactive elements on the page
- */
 function getInteractiveElements() {
   const selectors = [
     'button',
@@ -79,19 +70,14 @@ function getInteractiveElements() {
       selector: generateSelector(el)
     };
 
-    // Only include if we have some identifying info
     if (info.text || info.id || info.placeholder || info.ariaLabel || info.name) {
       elements.push(info);
     }
   });
 
-  // Limit to most relevant elements
   return elements.slice(0, 50);
 }
 
-/**
- * Get main content text (limited)
- */
 function getMainContent() {
   const mainSelectors = ['main', 'article', '[role="main"]', '.content', '#content'];
   let content = '';
@@ -108,13 +94,9 @@ function getMainContent() {
     content = document.body.innerText;
   }
 
-  // Limit content length
   return content.slice(0, 2000);
 }
 
-/**
- * Check if element is visible
- */
 function isVisible(el) {
   const style = window.getComputedStyle(el);
   return style.display !== 'none' &&
@@ -123,31 +105,24 @@ function isVisible(el) {
          el.offsetParent !== null;
 }
 
-/**
- * Get text content of element
- */
 function getElementText(el) {
   let text = el.innerText || el.textContent || '';
   text = text.trim().replace(/\s+/g, ' ');
   return text.slice(0, 100);
 }
 
-/**
- * Generate a unique CSS selector for element
- */
 function generateSelector(el) {
   if (el.id) {
-    return `#${CSS.escape(el.id)}`;
+    return '#' + CSS.escape(el.id);
   }
 
   if (el.name) {
-    const nameSelector = `[name="${CSS.escape(el.name)}"]`;
+    const nameSelector = '[name="' + CSS.escape(el.name) + '"]';
     if (document.querySelectorAll(nameSelector).length === 1) {
       return nameSelector;
     }
   }
 
-  // Build path
   const path = [];
   let current = el;
 
@@ -155,7 +130,7 @@ function generateSelector(el) {
     let selector = current.tagName.toLowerCase();
 
     if (current.id) {
-      selector = `#${CSS.escape(current.id)}`;
+      selector = '#' + CSS.escape(current.id);
       path.unshift(selector);
       break;
     }
@@ -171,7 +146,7 @@ function generateSelector(el) {
     if (siblings && siblings.length > 1) {
       const index = Array.from(siblings).filter(s => s.tagName === current.tagName).indexOf(current);
       if (index > 0) {
-        selector += `:nth-of-type(${index + 1})`;
+        selector += ':nth-of-type(' + (index + 1) + ')';
       }
     }
 
@@ -182,54 +157,37 @@ function generateSelector(el) {
   return path.join(' > ');
 }
 
-/**
- * Execute browser control action
- */
 async function executeAction(action) {
   try {
     switch (action.action) {
       case 'click':
         return await executeClick(action);
-
       case 'type':
         return await executeType(action);
-
       case 'scroll':
         return await executeScroll(action);
-
       case 'extract':
         return await executeExtract(action);
-
       case 'wait':
         return await executeWait(action);
-
       case 'select':
         return await executeSelect(action);
-
       case 'hover':
         return await executeHover(action);
-
       default:
-        return { success: false, error: `Unknown action: ${action.action}` };
+        return { success: false, error: 'Unknown action: ' + action.action };
     }
   } catch (error) {
     return { success: false, error: error.message, action: action.action };
   }
 }
 
-/**
- * Find element by selector or description
- */
 function findElement(selectorOrDesc) {
-  // Try as CSS selector first
   try {
     const el = document.querySelector(selectorOrDesc);
     if (el) return el;
-  } catch (e) {
-    // Invalid selector, try fuzzy match
-  }
+  } catch (e) {}
 
-  // Fuzzy match by text content
   const searchText = selectorOrDesc.toLowerCase();
   const candidates = document.querySelectorAll('button, a, input, textarea, select, [role="button"]');
 
@@ -250,27 +208,19 @@ function findElement(selectorOrDesc) {
   return null;
 }
 
-/**
- * Execute click action
- */
 async function executeClick(action) {
   const el = findElement(action.selector);
   if (!el) {
-    return { success: false, error: `Element not found: ${action.selector}` };
+    return { success: false, error: 'Element not found: ' + action.selector };
   }
 
-  // Scroll into view if needed
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   await sleep(200);
 
-  // Highlight element briefly
   highlightElement(el);
 
-  // Simulate click
   el.focus();
   el.click();
-
-  // Also dispatch events for stubborn elements
   el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
   return {
@@ -280,13 +230,10 @@ async function executeClick(action) {
   };
 }
 
-/**
- * Execute type action
- */
 async function executeType(action) {
   const el = findElement(action.selector);
   if (!el) {
-    return { success: false, error: `Element not found: ${action.selector}` };
+    return { success: false, error: 'Element not found: ' + action.selector };
   }
 
   if (!['INPUT', 'TEXTAREA'].includes(el.tagName) && !el.isContentEditable) {
@@ -299,14 +246,12 @@ async function executeType(action) {
   highlightElement(el);
   el.focus();
 
-  // Clear existing content
   if (el.isContentEditable) {
     el.innerHTML = '';
   } else {
     el.value = '';
   }
 
-  // Type text character by character for more realistic input
   const text = action.text;
   for (let i = 0; i < text.length; i++) {
     const char = text[i];
@@ -330,9 +275,6 @@ async function executeType(action) {
   };
 }
 
-/**
- * Execute scroll action
- */
 async function executeScroll(action) {
   const amount = action.amount || 300;
   let scrollX = 0;
@@ -352,7 +294,7 @@ async function executeScroll(action) {
       scrollX = amount;
       break;
     default:
-      scrollY = amount; // Default to scroll down
+      scrollY = amount;
   }
 
   window.scrollBy({ left: scrollX, top: scrollY, behavior: 'smooth' });
@@ -365,37 +307,31 @@ async function executeScroll(action) {
   };
 }
 
-/**
- * Execute extract action
- */
 async function executeExtract(action) {
   const type = action.type || 'text';
   let data;
 
   const container = action.selector ? document.querySelector(action.selector) : document.body;
   if (!container) {
-    return { success: false, error: `Container not found: ${action.selector}` };
+    return { success: false, error: 'Container not found: ' + action.selector };
   }
 
   switch (type) {
     case 'text':
       data = container.innerText;
       break;
-
     case 'links':
       data = Array.from(container.querySelectorAll('a[href]')).map(a => ({
         text: getElementText(a),
         href: a.href
       }));
       break;
-
     case 'images':
       data = Array.from(container.querySelectorAll('img')).map(img => ({
         src: img.src,
         alt: img.alt
       }));
       break;
-
     case 'all':
       data = {
         text: container.innerText.slice(0, 5000),
@@ -409,22 +345,17 @@ async function executeExtract(action) {
         }))
       };
       break;
-
     default:
-      return { success: false, error: `Unknown extract type: ${type}` };
+      return { success: false, error: 'Unknown extract type: ' + type };
   }
 
   return { success: true, action: 'extract', type, data };
 }
 
-/**
- * Execute wait action
- */
 async function executeWait(action) {
   const timeout = action.timeout || 1000;
 
   if (action.selector) {
-    // Wait for element
     const startTime = Date.now();
     while (Date.now() - startTime < timeout) {
       const el = document.querySelector(action.selector);
@@ -433,21 +364,17 @@ async function executeWait(action) {
       }
       await sleep(100);
     }
-    return { success: false, error: `Timeout waiting for: ${action.selector}` };
+    return { success: false, error: 'Timeout waiting for: ' + action.selector };
   } else {
-    // Simple wait
     await sleep(timeout);
     return { success: true, action: 'wait', duration: timeout };
   }
 }
 
-/**
- * Execute select action (dropdown)
- */
 async function executeSelect(action) {
   const el = findElement(action.selector);
   if (!el) {
-    return { success: false, error: `Element not found: ${action.selector}` };
+    return { success: false, error: 'Element not found: ' + action.selector };
   }
 
   if (el.tagName !== 'SELECT') {
@@ -465,13 +392,10 @@ async function executeSelect(action) {
   return { success: true, action: 'select', value: action.value };
 }
 
-/**
- * Execute hover action
- */
 async function executeHover(action) {
   const el = findElement(action.selector);
   if (!el) {
-    return { success: false, error: `Element not found: ${action.selector}` };
+    return { success: false, error: 'Element not found: ' + action.selector };
   }
 
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -485,16 +409,10 @@ async function executeHover(action) {
   return { success: true, action: 'hover', element: getElementText(el) || action.selector };
 }
 
-/**
- * Helper: Sleep function
- */
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * Helper: Highlight element briefly
- */
 function highlightElement(el) {
   const originalOutline = el.style.outline;
   const originalTransition = el.style.transition;
@@ -508,11 +426,7 @@ function highlightElement(el) {
   }, 1000);
 }
 
-/**
- * Show notification overlay
- */
 function showNotification(message) {
-  // Remove existing notification
   const existing = document.getElementById('gemini-notification');
   if (existing) {
     existing.remove();
@@ -536,8 +450,14 @@ function showNotification(message) {
       font-size: 14px;
       line-height: 1.5;
       border: 1px solid rgba(102, 126, 234, 0.3);
-      animation: slideIn 0.3s ease;
+      animation: geminiSlideIn 0.3s ease;
     ">
+      <style>
+        @keyframes geminiSlideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      </style>
       <div style="display: flex; align-items: flex-start; gap: 12px;">
         <div style="
           width: 32px;
@@ -568,23 +488,17 @@ function showNotification(message) {
         ">&times;</button>
       </div>
     </div>
-    <style>
-      @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-      }
-    </style>
   `;
 
   document.body.appendChild(notification);
 
-  // Auto-remove after 10 seconds
   setTimeout(() => {
-    notification.remove();
+    if (notification.parentNode) {
+      notification.remove();
+    }
   }, 10000);
 
   return { success: true };
 }
 
-// Initialize
 console.log('Gemini Browser Control content script loaded');
