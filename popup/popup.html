@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Browser Control</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Gemini Browser Control</h1>
+      <div class="status-indicator" id="statusIndicator">
+        <span class="status-dot"></span>
+        <span class="status-text">Not Connected</span>
+      </div>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="chat">Chat</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+      <button class="tab-btn" data-tab="history">History</button>
+    </div>
+
+    <!-- Chat Tab -->
+    <div class="tab-content active" id="chat">
+      <div class="chat-container">
+        <div class="messages" id="messages">
+          <div class="message assistant">
+            <p>Hello! I can help you control this browser. Try commands like:</p>
+            <ul>
+              <li>"Click on the search button"</li>
+              <li>"Type 'hello world' in the input field"</li>
+              <li>"Scroll down"</li>
+              <li>"Navigate to google.com"</li>
+              <li>"Extract all links from this page"</li>
+            </ul>
+          </div>
+        </div>
+        <div class="input-container">
+          <textarea id="userInput" placeholder="Tell me what to do..." rows="2"></textarea>
+          <button id="sendBtn" class="primary-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div class="tab-content" id="settings">
+      <div class="settings-container">
+        <div class="setting-group">
+          <label>API Provider</label>
+          <select id="apiProvider">
+            <option value="google">Google AI Studio</option>
+            <option value="openrouter">OpenRouter</option>
+          </select>
+        </div>
+
+        <div class="setting-group">
+          <label>API Key</label>
+          <div class="api-key-input">
+            <input type="password" id="apiKey" placeholder="Enter your API key">
+            <button id="toggleApiKey" class="icon-btn" title="Show/Hide">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <p class="hint" id="apiKeyHint">Get your key from Google AI Studio</p>
+        </div>
+
+        <div class="setting-group">
+          <label>Model</label>
+          <select id="modelSelect">
+            <optgroup label="Google AI Studio" id="googleModels">
+              <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            </optgroup>
+            <optgroup label="OpenRouter" id="openrouterModels" style="display: none;">
+              <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash Exp (Free)</option>
+              <option value="google/gemini-pro-1.5">Gemini 1.5 Pro</option>
+              <option value="google/gemini-flash-1.5">Gemini 1.5 Flash</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="setting-group">
+          <label>Temperature</label>
+          <div class="range-container">
+            <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+            <span id="temperatureValue">0.7</span>
+          </div>
+        </div>
+
+        <div class="setting-group">
+          <label>
+            <input type="checkbox" id="autoScreenshot" checked>
+            Send page screenshot with requests
+          </label>
+        </div>
+
+        <button id="saveSettings" class="primary-btn full-width">Save Settings</button>
+        <button id="testConnection" class="secondary-btn full-width">Test Connection</button>
+      </div>
+    </div>
+
+    <!-- History Tab -->
+    <div class="tab-content" id="history">
+      <div class="history-container">
+        <div class="history-header">
+          <h3>Action History</h3>
+          <button id="clearHistory" class="text-btn">Clear All</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <p class="empty-state">No actions yet</p>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>Powered by Gemini AI</p>
+    </footer>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
